@@ -144,20 +144,20 @@ def get_job_statistics():
 
 @app.route('/api/scrape', methods=['POST'])
 def trigger_scraping():
-    """Trigger job scraping process"""
+    """Trigger job scraping process using sitemap-based approach"""
     try:
         data = request.get_json()
-        max_pages = data.get('max_pages', 50) if data else 50
+        max_jobs = data.get('max_jobs', None) if data else None
         full_extraction = data.get('full_extraction', False) if data else False
         
         if full_extraction:
-            # Run comprehensive extraction
+            # Run comprehensive sitemap-based extraction
             jobs = scraper.run_full_extraction()
-            message = f'Full extraction completed. Found {len(jobs)} jobs.'
+            message = f'Full sitemap-based extraction completed. Found {len(jobs)} jobs.'
         else:
-            # Run standard scraper
-            jobs = scraper.run_scraper(max_pages=max_pages)
-            message = f'Scraping completed. Found {len(jobs)} jobs.'
+            # Run limited sitemap-based scraper
+            jobs = scraper.run_scraper(max_jobs=max_jobs)
+            message = f'Sitemap-based scraping completed. Found {len(jobs)} jobs.'
         
         # Reload job matcher with new data
         job_matcher.load_job_data()
@@ -166,7 +166,8 @@ def trigger_scraping():
             'status': 'success',
             'message': message,
             'jobs_count': len(jobs),
-            'extraction_type': 'full' if full_extraction else 'standard'
+            'extraction_type': 'full' if full_extraction else 'limited',
+            'method': 'sitemap-based'
         })
         
     except Exception as e:
@@ -175,9 +176,9 @@ def trigger_scraping():
 
 @app.route('/api/scrape/full', methods=['POST'])
 def trigger_full_extraction():
-    """Trigger comprehensive job extraction"""
+    """Trigger comprehensive sitemap-based job extraction"""
     try:
-        # Run full extraction
+        # Run full sitemap-based extraction
         jobs = scraper.run_full_extraction()
         
         # Reload job matcher with new data
@@ -188,11 +189,12 @@ def trigger_full_extraction():
         
         return jsonify({
             'status': 'success',
-            'message': f'Full extraction completed. Extracted {len(jobs)} jobs.',
+            'message': f'Full sitemap-based extraction completed. Extracted {len(jobs)} jobs.',
             'jobs_extracted': len(jobs),
             'total_jobs': stats.get('total_jobs', 0),
             'top_companies': dict(list(stats.get('top_companies', {}).items())[:5]),
-            'top_locations': dict(list(stats.get('top_locations', {}).items())[:5])
+            'top_locations': dict(list(stats.get('top_locations', {}).items())[:5]),
+            'method': 'sitemap-based'
         })
         
     except Exception as e:
