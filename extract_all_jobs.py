@@ -11,6 +11,7 @@ import sys
 import os
 from datetime import datetime
 from scraper import Job4Fresherscraper
+import csv
 
 # Configure logging
 logging.basicConfig(
@@ -30,7 +31,7 @@ class JobExtractionManager:
         self.scraper = Job4Fresherscraper(db_path)
         self.db_path = db_path
         
-    def run_complete_extraction(self):
+    def run_complete_extraction(self, export_csv: bool = True):
         """Run the complete extraction process using sitemap-based approach"""
         logger.info("=" * 80)
         logger.info("JOB4FRESHERS COMPLETE JOB EXTRACTION - SITEMAP-BASED")
@@ -38,6 +39,7 @@ class JobExtractionManager:
         logger.info(f"Target: Extract ALL job posts from {self.scraper.base_url}")
         logger.info(f"Method: Sitemap-based extraction from {self.scraper.base_url}/sitemap/")
         logger.info(f"Database: {self.db_path}")
+        logger.info(f"CSV Export: {'Enabled' if export_csv else 'Disabled'}")
         logger.info(f"Start time: {datetime.now()}")
         logger.info("=" * 80)
         
@@ -54,8 +56,13 @@ class JobExtractionManager:
             final_stats = self.scraper.get_job_statistics()
             final_count = final_stats.get('total_jobs', 0)
             
+            # Export to CSV if requested
+            csv_filename = ""
+            if export_csv:
+                csv_filename = self.export_to_csv()
+            
             # Generate report
-            self.generate_extraction_report(initial_count, final_count, jobs, final_stats)
+            self.generate_extraction_report(initial_count, final_count, jobs, final_stats, csv_filename)
             
             return jobs
             
@@ -63,8 +70,27 @@ class JobExtractionManager:
             logger.error(f"Extraction failed: {e}")
             return []
     
+    def export_to_csv(self) -> str:
+        """Export all jobs to CSV file"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        csv_filename = f"job4freshers_complete_jobs_{timestamp}.csv"
+        
+        logger.info(f"Exporting jobs to CSV: {csv_filename}")
+        
+        try:
+            exported_file = self.scraper.export_jobs_to_csv(csv_filename)
+            if exported_file:
+                logger.info(f"✅ Jobs successfully exported to {exported_file}")
+                return exported_file
+            else:
+                logger.error("❌ Failed to export jobs to CSV")
+                return ""
+        except Exception as e:
+            logger.error(f"Error during CSV export: {e}")
+            return ""
+    
     def generate_extraction_report(self, initial_count: int, final_count: int, 
-                                 extracted_jobs: list, stats: dict):
+                                 extracted_jobs: list, stats: dict, csv_filename: str = ""):
         """Generate comprehensive extraction report"""
         logger.info("=" * 80)
         logger.info("EXTRACTION REPORT")
@@ -75,6 +101,15 @@ class JobExtractionManager:
         logger.info(f"Net new jobs added: {final_count - initial_count}")
         logger.info(f"Total jobs in database: {final_count}")
         logger.info(f"Recent jobs (last 7 days): {stats.get('recent_jobs', 0)}")
+        
+        # CSV export information
+        if csv_filename:
+            logger.info(f"CSV Export: ✅ {csv_filename}")
+            if os.path.exists(csv_filename):
+                file_size = os.path.getsize(csv_filename)
+                logger.info(f"CSV File size: {file_size:,} bytes ({file_size/1024/1024:.2f} MB)")
+        else:
+            logger.info("CSV Export: ❌ Not generated")
         
         # Company statistics
         if stats.get('top_companies'):

@@ -14,6 +14,8 @@ from typing import List, Dict, Optional
 import sqlite3
 from datetime import datetime
 import re
+import csv
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -705,6 +707,91 @@ class Job4Fresherscraper:
         
         return jobs
     
+    def export_jobs_to_csv(self, csv_filename: str = None) -> str:
+        """Export all jobs from database to CSV file"""
+        if csv_filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            csv_filename = f"job4freshers_jobs_{timestamp}.csv"
+        
+        logger.info(f"Exporting jobs to CSV file: {csv_filename}")
+        
+        try:
+            # Get all jobs from database
+            jobs = self.get_all_jobs()
+            
+            if not jobs:
+                logger.warning("No jobs found in database to export")
+                return ""
+            
+            # Define CSV columns - all database fields
+            csv_columns = [
+                'id', 'title', 'company', 'location', 'experience', 'skills', 
+                'salary', 'description', 'posted_date', 'job_type', 'education',
+                'eligibility', 'last_date', 'application_link', 'url', 'scraped_at'
+            ]
+            
+            # Write to CSV
+            with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns, extrasaction='ignore')
+                writer.writeheader()
+                
+                for job in jobs:
+                    # Clean up the job data for CSV
+                    cleaned_job = {}
+                    for column in csv_columns:
+                        value = job.get(column, '')
+                        if value is None:
+                            value = ''
+                        # Clean up text for CSV
+                        if isinstance(value, str):
+                            value = value.replace('\n', ' ').replace('\r', ' ').strip()
+                        cleaned_job[column] = value
+                    
+                    writer.writerow(cleaned_job)
+            
+            logger.info(f"Successfully exported {len(jobs)} jobs to {csv_filename}")
+            
+            # Generate summary report
+            self.generate_csv_export_summary(csv_filename, jobs)
+            
+            return csv_filename
+            
+        except Exception as e:
+            logger.error(f"Error exporting jobs to CSV: {e}")
+            return ""
+    
+    def generate_csv_export_summary(self, csv_filename: str, jobs: List[Dict]):
+        """Generate a summary report for CSV export"""
+        logger.info("=" * 60)
+        logger.info("CSV EXPORT SUMMARY")
+        logger.info("=" * 60)
+        logger.info(f"File: {csv_filename}")
+        logger.info(f"Total jobs exported: {len(jobs)}")
+        logger.info(f"Export time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # File size
+        if os.path.exists(csv_filename):
+            file_size = os.path.getsize(csv_filename)
+            logger.info(f"File size: {file_size:,} bytes ({file_size/1024/1024:.2f} MB)")
+        
+        # Data summary
+        companies = set()
+        locations = set()
+        with_urls = 0
+        
+        for job in jobs:
+            if job.get('company') and job['company'] not in ['N/A', '']:
+                companies.add(job['company'])
+            if job.get('location') and job['location'] not in ['N/A', '']:
+                locations.add(job['location'])
+            if job.get('url') and job['url'] not in ['N/A', '']:
+                with_urls += 1
+        
+        logger.info(f"Unique companies: {len(companies)}")
+        logger.info(f"Unique locations: {len(locations)}")
+        logger.info(f"Jobs with URLs: {with_urls}")
+        logger.info(f"Data completeness: {(with_urls/len(jobs)*100):.1f}%")
+        logger.info("=" * 60)
 
 
 if __name__ == "__main__":

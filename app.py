@@ -216,6 +216,37 @@ def get_detailed_job_statistics():
         logger.error(f"Error in detailed statistics endpoint: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/jobs/export/csv', methods=['GET'])
+def export_jobs_csv():
+    """Export all jobs to CSV file"""
+    try:
+        # Export jobs to CSV
+        csv_filename = scraper.export_jobs_to_csv()
+        
+        if csv_filename:
+            # Get file statistics
+            import os
+            if os.path.exists(csv_filename):
+                file_size = os.path.getsize(csv_filename)
+                stats = scraper.get_job_statistics()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Jobs exported to CSV successfully',
+                    'filename': csv_filename,
+                    'file_size': file_size,
+                    'total_jobs': stats.get('total_jobs', 0),
+                    'export_time': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({'error': 'CSV file was not created'}), 500
+        else:
+            return jsonify({'error': 'CSV export failed'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in CSV export endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/api/chat/history/<session_id>', methods=['GET'])
 def get_chat_history(session_id):
     """Get chat history for a session"""

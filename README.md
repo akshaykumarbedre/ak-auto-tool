@@ -11,6 +11,7 @@ An intelligent end-to-end AI chatbot designed to help job seekers find suitable 
 - 🌐 **Web Scraping**: Automated job data collection from job4freshers.co.in
 - 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
 - 🔄 **Real-time Updates**: Live job recommendations and market trends
+- 📁 **CSV Export**: Export job data to CSV files for analysis and integration
 
 ## 🏗️ Architecture
 
@@ -155,6 +156,39 @@ Content-Type: application/json
   "max_pages": 5
 }
 ```
+
+#### Export jobs to CSV
+```bash
+GET /api/jobs/export/csv
+```
+
+## 📁 CSV Export Feature
+
+The system includes comprehensive CSV export functionality for job data:
+
+### Export Options
+1. **Manual Export**: Use the `/api/jobs/export/csv` endpoint
+2. **Automatic Export**: Enable during full extraction runs
+3. **Sample Export**: Generate sample data for testing
+
+### CSV File Structure
+- **job4freshers_jobs_data.csv**: Main data file
+- **job4freshers_jobs_YYYYMMDD_HHMMSS.csv**: Timestamped exports
+- All job fields included (title, company, location, skills, etc.)
+- UTF-8 encoding for international characters
+
+### Usage Examples
+```python
+# Export using scraper
+from scraper import Job4Fresherscraper
+scraper = Job4Fresherscraper()
+csv_file = scraper.export_jobs_to_csv()
+
+# Create sample CSV
+python create_sample_csv.py
+```
+
+For detailed CSV documentation, see [CSV_EXPORT_DOCUMENTATION.md](CSV_EXPORT_DOCUMENTATION.md).
 
 ## 🧠 AI Features
 
