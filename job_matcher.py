@@ -264,7 +264,12 @@ class JobMatchingEngine:
                 'description': str(job['description'])[:200] + '...' if len(str(job['description'])) > 200 else str(job['description']),
                 'url': str(job['url']),
                 'match_score': float(score),  # Ensure it's a Python float
-                'posted_date': str(job['posted_date'])
+                'posted_date': str(job['posted_date']),
+                'job_type': str(job.get('job_type', 'N/A')),
+                'education': str(job.get('education', 'N/A')),
+                'eligibility': str(job.get('eligibility', 'N/A')),
+                'last_date': str(job.get('last_date', 'N/A')),
+                'application_link': str(job.get('application_link', 'N/A'))
             }
             results.append(result)
         

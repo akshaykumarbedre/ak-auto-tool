@@ -147,22 +147,71 @@ def trigger_scraping():
     """Trigger job scraping process"""
     try:
         data = request.get_json()
-        max_pages = data.get('max_pages', 5) if data else 5
+        max_pages = data.get('max_pages', 50) if data else 50
+        full_extraction = data.get('full_extraction', False) if data else False
         
-        # Run scraper
-        jobs = scraper.run_scraper(max_pages=max_pages)
+        if full_extraction:
+            # Run comprehensive extraction
+            jobs = scraper.run_full_extraction()
+            message = f'Full extraction completed. Found {len(jobs)} jobs.'
+        else:
+            # Run standard scraper
+            jobs = scraper.run_scraper(max_pages=max_pages)
+            message = f'Scraping completed. Found {len(jobs)} jobs.'
         
         # Reload job matcher with new data
         job_matcher.load_job_data()
         
         return jsonify({
             'status': 'success',
-            'message': f'Scraping completed. Found {len(jobs)} jobs.',
-            'jobs_count': len(jobs)
+            'message': message,
+            'jobs_count': len(jobs),
+            'extraction_type': 'full' if full_extraction else 'standard'
         })
         
     except Exception as e:
         logger.error(f"Error in scraping endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/scrape/full', methods=['POST'])
+def trigger_full_extraction():
+    """Trigger comprehensive job extraction"""
+    try:
+        # Run full extraction
+        jobs = scraper.run_full_extraction()
+        
+        # Reload job matcher with new data
+        job_matcher.load_job_data()
+        
+        # Get statistics
+        stats = scraper.get_job_statistics()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Full extraction completed. Extracted {len(jobs)} jobs.',
+            'jobs_extracted': len(jobs),
+            'total_jobs': stats.get('total_jobs', 0),
+            'top_companies': dict(list(stats.get('top_companies', {}).items())[:5]),
+            'top_locations': dict(list(stats.get('top_locations', {}).items())[:5])
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in full extraction endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/jobs/stats', methods=['GET'])
+def get_detailed_job_statistics():
+    """Get detailed job statistics"""
+    try:
+        stats = scraper.get_job_statistics()
+        
+        return jsonify({
+            'status': 'success',
+            'statistics': stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in detailed statistics endpoint: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/chat/history/<session_id>', methods=['GET'])
