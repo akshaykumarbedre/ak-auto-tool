@@ -144,25 +144,107 @@ def get_job_statistics():
 
 @app.route('/api/scrape', methods=['POST'])
 def trigger_scraping():
-    """Trigger job scraping process"""
+    """Trigger job scraping process using sitemap-based approach"""
     try:
         data = request.get_json()
-        max_pages = data.get('max_pages', 5) if data else 5
+        max_jobs = data.get('max_jobs', None) if data else None
+        full_extraction = data.get('full_extraction', False) if data else False
         
-        # Run scraper
-        jobs = scraper.run_scraper(max_pages=max_pages)
+        if full_extraction:
+            # Run comprehensive sitemap-based extraction
+            jobs = scraper.run_full_extraction()
+            message = f'Full sitemap-based extraction completed. Found {len(jobs)} jobs.'
+        else:
+            # Run limited sitemap-based scraper
+            jobs = scraper.run_scraper(max_jobs=max_jobs)
+            message = f'Sitemap-based scraping completed. Found {len(jobs)} jobs.'
         
         # Reload job matcher with new data
         job_matcher.load_job_data()
         
         return jsonify({
             'status': 'success',
-            'message': f'Scraping completed. Found {len(jobs)} jobs.',
-            'jobs_count': len(jobs)
+            'message': message,
+            'jobs_count': len(jobs),
+            'extraction_type': 'full' if full_extraction else 'limited',
+            'method': 'sitemap-based'
         })
         
     except Exception as e:
         logger.error(f"Error in scraping endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/scrape/full', methods=['POST'])
+def trigger_full_extraction():
+    """Trigger comprehensive sitemap-based job extraction"""
+    try:
+        # Run full sitemap-based extraction
+        jobs = scraper.run_full_extraction()
+        
+        # Reload job matcher with new data
+        job_matcher.load_job_data()
+        
+        # Get statistics
+        stats = scraper.get_job_statistics()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Full sitemap-based extraction completed. Extracted {len(jobs)} jobs.',
+            'jobs_extracted': len(jobs),
+            'total_jobs': stats.get('total_jobs', 0),
+            'top_companies': dict(list(stats.get('top_companies', {}).items())[:5]),
+            'top_locations': dict(list(stats.get('top_locations', {}).items())[:5]),
+            'method': 'sitemap-based'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in full extraction endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/jobs/stats', methods=['GET'])
+def get_detailed_job_statistics():
+    """Get detailed job statistics"""
+    try:
+        stats = scraper.get_job_statistics()
+        
+        return jsonify({
+            'status': 'success',
+            'statistics': stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in detailed statistics endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/jobs/export/csv', methods=['GET'])
+def export_jobs_csv():
+    """Export all jobs to CSV file"""
+    try:
+        # Export jobs to CSV
+        csv_filename = scraper.export_jobs_to_csv()
+        
+        if csv_filename:
+            # Get file statistics
+            import os
+            if os.path.exists(csv_filename):
+                file_size = os.path.getsize(csv_filename)
+                stats = scraper.get_job_statistics()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Jobs exported to CSV successfully',
+                    'filename': csv_filename,
+                    'file_size': file_size,
+                    'total_jobs': stats.get('total_jobs', 0),
+                    'export_time': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({'error': 'CSV file was not created'}), 500
+        else:
+            return jsonify({'error': 'CSV export failed'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in CSV export endpoint: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/chat/history/<session_id>', methods=['GET'])
