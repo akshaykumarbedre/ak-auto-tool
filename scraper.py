@@ -697,7 +697,7 @@ class Job4Fresherscraper:
         logger.info("Using sitemap-based approach for comprehensive coverage")
         
         # Extract all jobs from sitemap (no limit)
-        jobs = self.scrape_job_listings(max_jobs=None)
+        jobs = self.scrape_job_listings(max_jobs=100)
         
         if jobs:
             saved_count = self.save_jobs_to_db(jobs)
