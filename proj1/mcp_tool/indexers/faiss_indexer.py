@@ -22,6 +22,11 @@ try:
 except ImportError:
     SentenceTransformer = None
 
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    RecursiveCharacterTextSplitter = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,12 +35,14 @@ class FAISSIndexer:
     FAISS-based indexer for semantic search using SentenceTransformer embeddings.
     """
     
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2", chunk_size: int = 1000, chunk_overlap: int = 200):
         """
         Initialize the FAISS indexer.
         
         Args:
             model_name: Name of the SentenceTransformer model to use
+            chunk_size: Size of text chunks for splitting
+            chunk_overlap: Overlap between chunks
         """
         if SentenceTransformer is None:
             raise ImportError("sentence-transformers is required. Install with: pip install sentence-transformers")
@@ -43,8 +50,13 @@ class FAISSIndexer:
         if faiss is None:
             raise ImportError("faiss is required. Install with: pip install faiss-cpu")
         
+        if RecursiveCharacterTextSplitter is None:
+            raise ImportError("langchain-text-splitters is required. Install with: pip install langchain-text-splitters")
+        
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
         self.index = None
         self.documents = []
         self.dimension = None
@@ -64,8 +76,36 @@ class FAISSIndexer:
         
         logger.info(f"Building FAISS index for {len(documents)} documents")
         
-        # Extract text content
-        texts = [doc['text'] for doc in documents]
+        # Initialize text splitter
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            length_function=len,
+        )
+        
+        # Split documents into chunks
+        logger.info("Splitting documents into chunks...")
+        chunked_documents = []
+        
+        for doc in documents:
+            text = doc['text']
+            chunks = text_splitter.split_text(text)
+            
+            for i, chunk in enumerate(chunks):
+                # Create a new document for each chunk
+                chunked_doc = {
+                    'url': doc['url'],
+                    'text': chunk,
+                    'title': doc.get('title', ''),
+                    'chunk_id': i,
+                    'total_chunks': len(chunks)
+                }
+                chunked_documents.append(chunked_doc)
+        
+        logger.info(f"Created {len(chunked_documents)} chunks from {len(documents)} documents")
+        
+        # Extract text content from chunks
+        texts = [doc['text'] for doc in chunked_documents]
         
         # Generate embeddings
         logger.info("Generating embeddings...")
@@ -84,8 +124,8 @@ class FAISSIndexer:
         # Add embeddings to index
         self.index.add(embeddings.astype('float32'))
         
-        # Store documents for retrieval
-        self.documents = documents
+        # Store chunked documents for retrieval
+        self.documents = chunked_documents
         
         # Save to disk
         os.makedirs(save_dir, exist_ok=True)
@@ -98,10 +138,12 @@ class FAISSIndexer:
         
         # Save metadata
         metadata = {
-            'documents': documents,
+            'documents': chunked_documents,
             'model_name': self.model_name,
             'dimension': self.dimension,
-            'mcp_name': mcp_name
+            'mcp_name': mcp_name,
+            'chunk_size': self.chunk_size,
+            'chunk_overlap': self.chunk_overlap
         }
         
         with open(metadata_path, 'wb') as f:
@@ -109,6 +151,7 @@ class FAISSIndexer:
         
         logger.info(f"Index saved to {index_path}")
         logger.info(f"Metadata saved to {metadata_path}")
+        logger.info(f"Total chunks indexed: {len(chunked_documents)}")
     
     def load_index(self, mcp_name: str, save_dir: str = "mcp_indices") -> None:
         """
@@ -134,6 +177,8 @@ class FAISSIndexer:
         self.documents = metadata['documents']
         self.model_name = metadata['model_name']
         self.dimension = metadata['dimension']
+        self.chunk_size = metadata.get('chunk_size', 1000)
+        self.chunk_overlap = metadata.get('chunk_overlap', 200)
         
         # Ensure model is loaded
         if self.model is None or self.model.get_sentence_embedding_dimension() != self.dimension:
@@ -142,7 +187,7 @@ class FAISSIndexer:
         
         logger.info(f"Loaded index for MCP '{mcp_name}' with {len(self.documents)} documents")
     
-    def search(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 7) -> List[Dict[str, Any]]:
         """
         Search for similar documents using the query.
         
@@ -175,7 +220,9 @@ class FAISSIndexer:
                     'text': doc['text'],
                     'title': doc.get('title', ''),
                     'score': float(score),
-                    'rank': i + 1
+                    'rank': i + 1,
+                    'chunk_id': doc.get('chunk_id', 0),
+                    'total_chunks': doc.get('total_chunks', 1)
                 })
         
         return results
@@ -195,12 +242,15 @@ class FAISSIndexer:
             'total_documents': len(self.documents),
             'dimension': self.dimension,
             'model_name': self.model_name,
-            'index_size': self.index.ntotal
+            'index_size': self.index.ntotal,
+            'chunk_size': self.chunk_size,
+            'chunk_overlap': self.chunk_overlap
         }
 
 
 def build_index(documents: List[Dict[str, str]], mcp_name: str, 
                model_name: str = "all-MiniLM-L6-v2", 
+               chunk_size: int = 1000, chunk_overlap: int = 200,
                save_dir: str = "mcp_indices") -> None:
     """
     Convenience function to build a FAISS index.
@@ -209,9 +259,11 @@ def build_index(documents: List[Dict[str, str]], mcp_name: str,
         documents: List of document dictionaries
         mcp_name: Name for the MCP
         model_name: SentenceTransformer model name
+        chunk_size: Size of text chunks for splitting
+        chunk_overlap: Overlap between chunks
         save_dir: Directory to save index files
     """
-    indexer = FAISSIndexer(model_name)
+    indexer = FAISSIndexer(model_name, chunk_size, chunk_overlap)
     indexer.build_index(documents, mcp_name, save_dir)
 
 

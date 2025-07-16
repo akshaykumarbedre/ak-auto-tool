@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def generate_mcp_from_website(
     base_url: str,
     mcp_name: str,
-    max_depth: int = 2,
+    max_depth: int = 5,
     max_pages: int = 100,
     model_name: str = "all-MiniLM-L6-v2",
     delay: float = 1.0,
