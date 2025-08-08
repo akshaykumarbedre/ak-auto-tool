@@ -150,11 +150,14 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# Node.js (if using npm for frontend dependencies)
+# Node.js (for website frontend dependencies)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.next/
+.vercel/
+*.tsbuildinfo
 
 # Temporary files
 *.tmp
