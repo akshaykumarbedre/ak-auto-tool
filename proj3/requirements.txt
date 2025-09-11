@@ -1,0 +1,11 @@
+llama-cloud-services
+llama-index
+llama-index-core
+ipykernel
+llama_index.llms.google_genai
+llama-index-embeddings-google-genai
+langchain_community
+arxiv
+
+llama-index-readers-file 
+pymupdf
