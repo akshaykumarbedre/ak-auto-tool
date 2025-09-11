@@ -6,6 +6,7 @@ llama_index.llms.google_genai
 llama-index-embeddings-google-genai
 langchain_community
 arxiv
-
+streamlit
 llama-index-readers-file 
 pymupdf
+chromadb

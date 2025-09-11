@@ -1,0 +1,30 @@
+⚠️  Streamlit not available. This is a demo version.
+⚠️  LlamaIndex not available in demo mode.
+⚠️  PyMuPDFReader not available in demo mode.
+⚠️  PyMuPDF not available in demo mode.
+
+============================================================
+📚 PDF Chat Assistant - Demo Information
+============================================================
+
+🎯 Application Features:
+- Multi-PDF upload and processing
+- Dual parsing methods (Quick/Detailed)
+- Vector indexing for efficient retrieval
+- Interactive chat interface
+- Environment variable configuration
+
+🔧 Technical Stack:
+- Streamlit for the web interface
+- LlamaIndex for document processing and retrieval
+- PyMuPDF for fast PDF text extraction
+- LlamaParse for advanced document understanding
+- ChromaDB for vector storage (optional)
+
+📦 To run the full application:
+1. Install dependencies: pip install -r requirements.txt
+2. Run the app: streamlit run pdf_chat_app.py
+3. Access via browser: http://localhost:8501
+
+============================================================
+
