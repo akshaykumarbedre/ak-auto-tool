@@ -110,11 +110,14 @@ source venv/bin/activate
 # Install additional dependencies
 pip install sentence-transformers faiss-cpu
 
-# Example: Load Python documentation
-python mcp_tool.py --url "https://docs.python.org/3.9/" --query "file operations"
-
-# Example: Generate MCP from website
+# Example 1: Generate MCP from website (Website Generator Tool)
 python -m mcp_tool.generate_mcp --url "https://www.langchain.com" --name "langchain"
+
+# Example 2: Query an existing MCP
+python -m mcp_tool.generate_mcp --query "langchain" --search "how to use retrievers"
+
+# Note: The Document Loading tool is used programmatically via Python API
+# See proj1/README.md for detailed usage examples
 ```
 
 #### For Ace Tech Website
@@ -139,9 +142,9 @@ npm run build
 
 Each project contains detailed documentation:
 
-- **proj1 MCP Tools**: Comprehensive guides for both the document loader and website generator
-  - `/proj1/README.md` - Main MCP tool documentation
-  - `/proj1/mcp_tool/README.md` - Website generator documentation
+- **proj1 MCP Tools**: Comprehensive guides for both tools
+  - `/proj1/README.md` - Document Loading and Retrieval tool documentation
+  - `/proj1/mcp_tool/README.md` - MCP Website Generator documentation
   - `/proj1/sample_mcp_creation_doc.txt` - Detailed MCP creation tutorial
 
 - **ace-tech-website**: Complete website documentation with setup, features, and deployment guides
@@ -173,7 +176,7 @@ Each project contains detailed documentation:
 
 ## 🔧 Technologies Used
 
-### Backend & AI
+### proj1 - MCP Tools
 - **Python 3.8+**
 - **LangChain** - Document processing and retrieval
 - **FAISS** - Vector similarity search
@@ -181,15 +184,16 @@ Each project contains detailed documentation:
 - **BeautifulSoup4** - Web scraping
 - **Pandas** - Data manipulation
 
-### Frontend
+### ace-tech-website
 - **Next.js 15** - React framework
 - **React 19** - UI library
 - **Tailwind CSS** - Utility-first CSS
 - **JavaScript/JSX** - Programming language
 
-### Tools & Infrastructure
+### Development Tools
 - **Git** - Version control
-- **npm/uv** - Package management
+- **npm** - Node.js package management
+- **uv** - Python package management
 - **Virtual environments** - Python isolation
 
 ---
