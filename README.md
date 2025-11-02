@@ -97,6 +97,7 @@ A modern, professional website for Ace Tech Solutions, a Bangalore-based AI auto
 
 #### For MCP Tools (proj1)
 
+**Setup:**
 ```bash
 # Navigate to proj1
 cd proj1
@@ -109,15 +110,25 @@ source venv/bin/activate
 
 # Install additional dependencies
 pip install sentence-transformers faiss-cpu
+```
 
-# Example 1: Generate MCP from website (Website Generator Tool)
+**MCP Website Generator (Available):**
+```bash
+# Generate MCP from website
 python -m mcp_tool.generate_mcp --url "https://www.langchain.com" --name "langchain"
 
-# Example 2: Query an existing MCP
+# Query an existing MCP (provide MCP name after --query, search query after --search)
 python -m mcp_tool.generate_mcp --query "langchain" --search "how to use retrievers"
 
-# Note: The Document Loading tool is used programmatically via Python API
-# See proj1/README.md for detailed usage examples
+# List all MCPs
+python -m mcp_tool.generate_mcp --list
+```
+
+**Document Loading Tool:**
+```bash
+# Note: The entry point mcp_tool.py referenced in proj1/README.md does not exist
+# This tool may need to be used via Python API (see proj1/README.md for API usage)
+# Or it may require additional setup/installation
 ```
 
 #### For Ace Tech Website
