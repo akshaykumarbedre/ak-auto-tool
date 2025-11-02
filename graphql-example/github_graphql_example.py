@@ -128,8 +128,8 @@ def main():
         print("   (Modify owner/repo as needed)")
         
         # You can uncomment and modify the following to query a specific repo:
-        # owner = "akshaykumarbedre"
-        # repo = "ak-auto-tool"
+        # owner = "OWNER"
+        # repo = "REPO"
         # issues_data = gh.get_repository_issues(owner, repo, first=5)
         # issues = issues_data['repository']['issues']
         # print(f"\n   Found {issues['totalCount']} open issues")
