@@ -1,0 +1,5 @@
+# Scraped output files
+*.json
+
+# But keep the directory
+!.gitkeep
